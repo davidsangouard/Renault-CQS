@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CQS – Wireframes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Caveat+Brush&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f0ede8; font-family: 'Caveat', cursive; }
+    #root { width: 100%; height: 100vh; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel">
+
+/* ─── Sketch primitives ─── */
+const S = {
+  box: {
+    border: '2px solid #222',
+    borderRadius: 4,
+    background: '#fff',
+    position: 'relative',
+  },
+  boxDashed: {
+    border: '2px dashed #aaa',
+    borderRadius: 4,
+    background: '#fafafa',
+    position: 'relative',
+  },
+  label: {
+    fontFamily: 'Caveat, cursive',
+    fontSize: 13,
+    color: '#444',
+  },
+  title: {
+    fontFamily: 'Caveat, cursive',
+    fontWeight: 700,
+    fontSize: 16,
+    color: '#111',
+  },
+  badge: (color = '#222') => ({
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    border: `2px solid ${color}`,
+    borderRadius: 20,
+    padding: '1px 8px',
+    fontSize: 12,
+    fontFamily: 'Caveat, cursive',
+    color,
+    background: color === '#222' ? 'transparent' : color + '22',
+  }),
+  pill: (bg, fg='#fff') => ({
+    background: bg, color: fg, borderRadius: 99,
+    padding: '2px 10px', fontSize: 12,
+    fontFamily: 'Caveat, cursive', fontWeight: 600,
+  }),
+  hatching: {
+    backgroundImage: 'repeating-linear-gradient(135deg, #ddd 0px, #ddd 1px, transparent 1px, transparent 8px)',
+    background: '#f5f5f5',
+  },
+};
+
+const Sketch = ({ w, h, children, style = {} }) => (
+  <div style={{ width: w, height: h, position: 'relative', fontFamily: 'Caveat, cursive', ...style }}>
+    {children}
+  </div>
+);
+
+const Row = ({ children, gap = 8, style = {} }) => (
+  <div style={{ display: 'flex', gap, alignItems: 'center', ...style }}>{children}</div>
+);
+const Col = ({ children, gap = 8, style = {} }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap, ...style }}>{children}</div>
+);
+
+const Rect = ({ x, y, w, h, label, bg = '#fff', border = '#222', dashed, style = {}, children, fontSize = 13 }) => (
+  <div style={{
+    position: 'absolute', left: x, top: y, width: w, height: h,
+    border: `2px ${dashed ? 'dashed' : 'solid'} ${border}`,
+    background: bg, borderRadius: 3, overflow: 'hidden',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'column',
+    ...style
+  }}>
+    {children || (label && <span style={{ fontSize, fontFamily: 'Caveat, cursive', color: '#333', textAlign: 'center', padding: '0 4px' }}>{label}</span>)}
+  </div>
+);
+
+const Line = ({ x1, y1, x2, y2, color = '#aaa', dashed }) => (
+  <svg style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+    <line x1={x1} y1={y1} x2={x2} y2={y2}
+      stroke={color} strokeWidth={1.5}
+      strokeDasharray={dashed ? '5,4' : undefined} />
+  </svg>
+);
+
+const Tag = ({ x, y, text, color = '#e8a020', bg }) => (
+  <div style={{
+    position: 'absolute', left: x, top: y,
+    background: bg || color + '22', border: `1.5px solid ${color}`,
+    borderRadius: 3, padding: '0 6px', fontSize: 11,
+    fontFamily: 'Caveat, cursive', color, fontWeight: 600,
+    whiteSpace: 'nowrap',
+  }}>{text}</div>
+);
+
+const Arrow = ({ x1, y1, x2, y2, color = '#666' }) => {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const ax = x2 - ux*10 + uy*5;
+  const ay = y2 - uy*10 - ux*5;
+  const bx = x2 - ux*10 - uy*5;
+  const by = y2 - uy*10 + ux*5;
+  return (
+    <svg style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={1.5} />
+      <polygon points={`${x2},${y2} ${ax},${ay} ${bx},${by}`} fill={color} />
+    </svg>
+  );
+};
+
+/* ─── OPTION A: Dashboard Split ─── */
+const OptionA = () => {
+  const ops = ['OP 80','OP 110','OP 140','OP 150','OP 210_1','OP 210_2','OP 250_1','OP 250_2','OP 260_1','OP 260_2'];
+  const statuses = ['ok','ok','retouche','ok','encours','todo','todo','todo','todo','todo'];
+  const statusColor = { ok:'#2a9d6e', retouche:'#e8a020', encours:'#2970c4', todo:'#bbb' };
+  const statusLabel = { ok:'✓ OK', retouche:'↩ Retouché', encours:'… En cours', todo:'— À faire' };
+
+  return (
+    <Sketch w={800} h={520}>
+      {/* Topbar */}
+      <Rect x={0} y={0} w={800} h={44} bg="#222" style={{ borderRadius: 0, flexDirection: 'row', justifyContent: 'space-between', padding: '0 16px' }}>
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>CQS — Checklist Qualité Soudure</span>
+        <Row gap={12}>
+          <span style={{ color: '#aaa', fontSize: 13 }}>CEV BAR</span>
+          <div style={{ background: '#444', borderRadius: 99, padding: '2px 12px', color: '#ddd', fontSize: 12 }}>N° OF: 2024-087</div>
+        </Row>
+      </Rect>
+
+      {/* Left sidebar – OP list */}
+      <Rect x={0} y={44} w={200} h={476} bg="#f7f5f2" border="#ddd" style={{ borderRadius: 0, flexDirection: 'column', alignItems: 'flex-start', padding: 0, justifyContent: 'flex-start' }}>
+        <div style={{ padding: '8px 12px', fontSize: 11, color: '#999', fontFamily: 'Caveat', letterSpacing: 1, borderBottom: '1px solid #e0ddd8', width: '100%' }}>
+          OPÉRATIONS
+        </div>
+        {ops.map((op, i) => (
+          <div key={i} style={{
+            width: '100%', padding: '7px 12px',
+            background: i === 4 ? '#fff' : 'transparent',
+            borderLeft: i === 4 ? '3px solid #2970c4' : '3px solid transparent',
+            borderBottom: '1px solid #ece9e2',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            cursor: 'pointer',
+          }}>
+            <span style={{ fontSize: 14, fontFamily: 'Caveat', color: i === 4 ? '#2970c4' : '#333', fontWeight: i === 4 ? 700 : 400 }}>{op}</span>
+            <span style={{ fontSize: 11, fontFamily: 'Caveat', color: statusColor[statuses[i]], fontWeight: 600 }}>{statusLabel[statuses[i]]}</span>
+          </div>
+        ))}
+      </Rect>
+
+      {/* Main content */}
+      <Rect x={200} y={44} w={600} h={476} bg="#fff" border="#eee" style={{ borderRadius: 0, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', padding: 16, gap: 12 }}>
+        {/* OP header */}
+        <Row gap={16} style={{ width: '100%', paddingBottom: 10, borderBottom: '1px solid #eee' }}>
+          <span style={{ fontSize: 20, fontWeight: 700, color: '#2970c4' }}>OP 210_1</span>
+          <div style={{ ...S.pill('#2970c4'), fontSize: 13 }}>En cours</div>
+          <div style={{ flex: 1 }} />
+          <span style={{ fontSize: 12, color: '#888' }}>n° Pièce: —</span>
+          <span style={{ fontSize: 12, color: '#888' }}>n° OF: 2024-087</span>
+        </Row>
+
+        {/* Sub-assemblies */}
+        <div style={{ width: '100%' }}>
+          <div style={{ fontSize: 12, color: '#888', marginBottom: 6, fontFamily: 'Caveat' }}>Sous-ensembles utilisés</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {[['OP 110', 'D', '#c5d8f5'], ['OP 140', 'D', '#c5d8f5'], ['OP 150', 'D', '#c5d8f5']].map(([op, side, bg], i) => (
+              <div key={i} style={{ border: '1.5px solid #ccc', borderRadius: 4, padding: '6px 10px', background: bg }}>
+                <div style={{ fontSize: 11, color: '#666', fontFamily: 'Caveat' }}>{op} ({side})</div>
+                <div style={{ fontSize: 13, color: '#333', fontFamily: 'Caveat', fontWeight: 600 }}>N° ___________</div>
+                <div style={{ fontSize: 11, color: '#888', fontFamily: 'Caveat' }}>Retouché: ○ O  ○ N</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Weld cordons */}
+        <div style={{ width: '100%', flex: 1 }}>
+          <div style={{ fontSize: 12, color: '#888', marginBottom: 6, fontFamily: 'Caveat' }}>Conformité Soudure — Cordons</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+            {[180,181,52,53,132,133,140,141,64,65,142,143].map((c, i) => (
+              <div key={i} style={{
+                border: `2px solid ${i < 2 ? '#2a9d6e' : i < 4 ? '#2a9d6e' : '#ddd'}`,
+                borderRadius: 4, padding: '5px 8px', background: i < 4 ? '#e8f7f1' : '#fafafa',
+                display: 'flex', flexDirection: 'column', gap: 2
+              }}>
+                <span style={{ fontFamily: 'Caveat', fontSize: 12, color: '#666' }}>C{c}</span>
+                <Row gap={4}>
+                  <div style={{ ...S.pill(i < 4 ? '#2a9d6e' : '#eee', i < 4 ? '#fff' : '#999'), fontSize: 11 }}>OK</div>
+                  <div style={{ ...S.pill(i < 4 ? '#eee' : '#eee', '#999'), fontSize: 11 }}>NOK</div>
+                </Row>
+                <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'Caveat' }}>Retouché: ○</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <Row gap={10} style={{ width: '100%', paddingTop: 8, borderTop: '1px solid #eee' }}>
+          <div style={{ ...S.pill('#e8f7f1', '#2a9d6e'), border: '1.5px solid #2a9d6e', fontSize: 14, padding: '4px 16px', cursor: 'pointer' }}>✓ Pièce conforme</div>
+          <div style={{ ...S.pill('#fff3e0', '#e8a020'), border: '1.5px solid #e8a020', fontSize: 14, padding: '4px 16px', cursor: 'pointer' }}>↩ Non conforme + retouche</div>
+          <div style={{ flex: 1 }} />
+          <div style={{ background: '#2970c4', color: '#fff', borderRadius: 4, padding: '5px 18px', fontSize: 15, fontFamily: 'Caveat', fontWeight: 700, cursor: 'pointer' }}>Valider →</div>
+        </Row>
+      </Rect>
+
+      {/* Annotations */}
+      <Tag x={8} y={370} text="liste de toutes les OPs" color="#2970c4" />
+      <Tag x={210} y={200} text="saisie n° pièces + retouche" color="#e8a020" />
+      <Tag x={530} y={280} text="cocher chaque cordon" color="#2a9d6e" />
+    </Sketch>
+  );
+};
+
+/* ─── OPTION B: Wizard Mobile ─── */
+const OptionB = () => {
+  return (
+    <Sketch w={340} h={580}>
+      {/* Phone frame */}
+      <Rect x={0} y={0} w={340} h={580} bg="#eee" border="#222" style={{ borderRadius: 20 }}>
+        {/* Status bar */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 28, background: '#222', borderRadius: '18px 18px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
+          <span style={{ color: '#fff', fontSize: 11, fontFamily: 'Caveat' }}>09:41</span>
+          <span style={{ color: '#fff', fontSize: 11, fontFamily: 'Caveat' }}>●●● WiFi</span>
+        </div>
+
+        {/* App header */}
+        <div style={{ position: 'absolute', top: 28, left: 0, right: 0, height: 50, background: '#1a1a2e', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10 }}>
+          <span style={{ color: '#fff', fontSize: 18, fontFamily: 'Caveat', fontWeight: 700 }}>CQS</span>
+          <span style={{ color: '#aaa', fontSize: 13, fontFamily: 'Caveat' }}>OP 210_1</span>
+          <div style={{ flex: 1 }} />
+          <span style={{ color: '#e8a020', fontSize: 12, fontFamily: 'Caveat' }}>2/4</span>
+        </div>
+
+        {/* Progress bar */}
+        <div style={{ position: 'absolute', top: 78, left: 0, right: 0, height: 4, background: '#ddd' }}>
+          <div style={{ width: '50%', height: '100%', background: '#2970c4' }} />
+        </div>
+
+        {/* Step indicator */}
+        <div style={{ position: 'absolute', top: 86, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8 }}>
+          {['En-tête','Pièces','Cordons','Validation'].map((s, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+              <div style={{ width: 26, height: 26, borderRadius: 99, background: i < 2 ? '#2970c4' : i === 2 ? '#fff' : '#ddd', border: `2px solid ${i < 2 ? '#2970c4' : i === 2 ? '#2970c4' : '#ccc'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 11, fontFamily: 'Caveat', color: i < 2 ? '#fff' : i === 2 ? '#2970c4' : '#aaa', fontWeight: 700 }}>{i < 2 ? '✓' : i+1}</span>
+              </div>
+              <span style={{ fontSize: 9, fontFamily: 'Caveat', color: i === 2 ? '#2970c4' : '#aaa' }}>{s}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Step content: Cordons */}
+        <div style={{ position: 'absolute', top: 148, left: 10, right: 10, bottom: 80 }}>
+          <div style={{ fontSize: 16, fontFamily: 'Caveat', fontWeight: 700, color: '#222', marginBottom: 8 }}>Cordons de soudure</div>
+          <Col gap={6}>
+            {[{n:180, s:'ok'},{n:181, s:'ok'},{n:52, s:'nok'},{n:53, s:'todo'},{n:132, s:'todo'},{n:133, s:'todo'}].map(({n, s}, i) => (
+              <div key={i} style={{ border: `2px solid ${s==='ok'?'#2a9d6e':s==='nok'?'#e55353':'#ddd'}`, borderRadius: 8, padding: '8px 12px', background: s==='ok'?'#f0faf5':s==='nok'?'#fff0f0':'#fff', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontFamily: 'Caveat', fontSize: 16, fontWeight: 700, color: '#444', minWidth: 40 }}>C{n}</span>
+                <div style={{ flex: 1 }} />
+                <div style={{ border: `2px solid #2a9d6e`, borderRadius: 6, padding: '2px 14px', background: s==='ok'?'#2a9d6e':'transparent', color: s==='ok'?'#fff':'#2a9d6e', fontSize: 15, fontFamily: 'Caveat', fontWeight: 600 }}>OK</div>
+                <div style={{ border: `2px solid #e55353`, borderRadius: 6, padding: '2px 14px', background: s==='nok'?'#e55353':'transparent', color: s==='nok'?'#fff':'#e55353', fontSize: 15, fontFamily: 'Caveat', fontWeight: 600 }}>NOK</div>
+                {s === 'nok' && <div style={{ border: '2px solid #e8a020', borderRadius: 6, padding: '2px 10px', background: '#fff8ee', color: '#e8a020', fontSize: 12, fontFamily: 'Caveat' }}>↩</div>}
+              </div>
+            ))}
+            <div style={{ fontSize: 12, color: '#aaa', fontFamily: 'Caveat', textAlign: 'center' }}>… 6 cordons restants</div>
+          </Col>
+        </div>
+
+        {/* Nav buttons */}
+        <div style={{ position: 'absolute', bottom: 16, left: 10, right: 10, display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1, border: '2px solid #ccc', borderRadius: 10, padding: '10px', textAlign: 'center', fontFamily: 'Caveat', fontSize: 16, color: '#666', background: '#fafafa' }}>← Retour</div>
+          <div style={{ flex: 2, background: '#2970c4', borderRadius: 10, padding: '10px', textAlign: 'center', fontFamily: 'Caveat', fontSize: 16, color: '#fff', fontWeight: 700 }}>Suivant →</div>
+        </div>
+      </Rect>
+
+      {/* Annotations */}
+      <Tag x={-130} y={92} text="barre de progression" color="#2970c4" />
+      <Tag x={-120} y={200} text="tap: OK ou NOK" color="#2a9d6e" />
+      <Tag x={-130} y={290} text="↩ si retouche" color="#e8a020" />
+    </Sketch>
+  );
+};
+
+/* ─── OPTION C: Vue Opérateur Compacte ─── */
+const OptionC = () => {
+  const ops = ['OP 80','OP 110','OP 140','OP 150','OP 210_1','OP 210_2','OP 250_1'];
+  const statuses = ['ok','ok','retouche','ok','encours','todo','todo'];
+  const statusColor = { ok:'#2a9d6e', retouche:'#e8a020', encours:'#2970c4', todo:'#bbb' };
+
+  return (
+    <Sketch w={720} h={520}>
+      {/* Header */}
+      <Rect x={0} y={0} w={720} h={50} bg="#1a1a2e" border="#1a1a2e" style={{ borderRadius: '4px 4px 0 0', flexDirection: 'row', justifyContent: 'space-between', padding: '0 20px' }}>
+        <span style={{ color: '#fff', fontSize: 20, fontWeight: 700 }}>CQS — CEV BAR</span>
+        <Row gap={12}>
+          <div style={{ background: '#2970c4', borderRadius: 4, padding: '3px 12px', color: '#fff', fontSize: 14 }}>OF: 2024-087</div>
+          <div style={{ border: '1px solid #555', borderRadius: 4, padding: '3px 12px', color: '#aaa', fontSize: 14 }}>+ Nouveau</div>
+        </Row>
+      </Rect>
+
+      {/* Tab bar */}
+      <Rect x={0} y={50} w={720} h={36} bg="#f0ede8" border="#ddd" style={{ borderRadius: 0, flexDirection: 'row', justifyContent: 'flex-start', gap: 0, padding: '0 20px', alignItems: 'flex-end' }}>
+        {['Toutes (17)','En cours (1)','NOK (0)','Terminées (4)'].map((t, i) => (
+          <div key={i} style={{ padding: '4px 16px', background: i === 0 ? '#fff' : 'transparent', borderTop: i === 0 ? '2px solid #2970c4' : 'none', borderLeft: i === 0 ? '1px solid #ddd' : 'none', borderRight: i === 0 ? '1px solid #ddd' : 'none', fontFamily: 'Caveat', fontSize: 14, color: i === 0 ? '#2970c4' : '#888', cursor: 'pointer' }}>{t}</div>
+        ))}
+      </Rect>
+
+      {/* Table header */}
+      <div style={{ position: 'absolute', top: 86, left: 0, right: 0, height: 28, background: '#e8e4de', display: 'grid', gridTemplateColumns: '80px 60px 1fr 80px 80px 80px', alignItems: 'center', padding: '0 20px', gap: 8 }}>
+        {['OP','Status','N° Pièce','Cordons','NOK','Action'].map((h, i) => (
+          <span key={i} style={{ fontFamily: 'Caveat', fontSize: 12, color: '#666', fontWeight: 700 }}>{h}</span>
+        ))}
+      </div>
+
+      {/* Table rows */}
+      <div style={{ position: 'absolute', top: 114, left: 0, right: 0, bottom: 60 }}>
+        {ops.map((op, i) => (
+          <div key={i} style={{ height: 44, background: i === 4 ? '#f0f6ff' : i % 2 === 0 ? '#fff' : '#faf9f7', borderBottom: '1px solid #eee', display: 'grid', gridTemplateColumns: '80px 60px 1fr 80px 80px 80px', alignItems: 'center', padding: '0 20px', gap: 8 }}>
+            <span style={{ fontFamily: 'Caveat', fontWeight: 700, fontSize: 15, color: i === 4 ? '#2970c4' : '#333' }}>{op}</span>
+            <div style={{ width: 10, height: 10, borderRadius: 99, background: statusColor[statuses[i]] }} />
+            <span style={{ fontFamily: 'Caveat', fontSize: 14, color: statuses[i] === 'todo' ? '#bbb' : '#444' }}>
+              {statuses[i] === 'todo' ? '— — — — —' : statuses[i] === 'encours' ? '___________' : '24-087-001'}
+            </span>
+            <span style={{ fontFamily: 'Caveat', fontSize: 13, color: '#666' }}>
+              {statuses[i] === 'todo' ? '—' : statuses[i] === 'encours' ? '6/12' : '✓ 10/10'}
+            </span>
+            <span style={{ fontFamily: 'Caveat', fontSize: 13, color: statuses[i] === 'retouche' ? '#e8a020' : '#bbb' }}>
+              {statuses[i] === 'retouche' ? '↩ 2' : statuses[i] === 'ok' ? '0' : '—'}
+            </span>
+            <div style={{ background: statuses[i] === 'todo' ? '#eee' : statuses[i] === 'encours' ? '#2970c4' : '#e8e4de', color: statuses[i] === 'encours' ? '#fff' : '#666', borderRadius: 4, padding: '2px 10px', fontSize: 13, fontFamily: 'Caveat', cursor: 'pointer', textAlign: 'center' }}>
+              {statuses[i] === 'todo' ? 'Démarrer' : statuses[i] === 'encours' ? 'Continuer' : 'Voir'}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Summary footer */}
+      <Rect x={0} y={460} w={720} h={60} bg="#f7f5f2" border="#eee" style={{ borderRadius: 0, flexDirection: 'row', gap: 24, padding: '0 20px', justifyContent: 'flex-start' }}>
+        {[['4','Validées','#2a9d6e'],['1','En cours','#2970c4'],['1','Retouchées','#e8a020'],['11','À faire','#bbb']].map(([n, l, c]) => (
+          <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 22, fontWeight: 700, fontFamily: 'Caveat', color: c }}>{n}</span>
+            <span style={{ fontSize: 13, fontFamily: 'Caveat', color: '#888' }}>{l}</span>
+          </div>
+        ))}
+        <div style={{ flex: 1 }} />
+        <div style={{ border: '2px solid #2a9d6e', borderRadius: 4, padding: '4px 18px', fontSize: 16, fontFamily: 'Caveat', color: '#2a9d6e', cursor: 'pointer' }}>Exporter PDF</div>
+      </Rect>
+
+      <Tag x={160} y={116} text="vue tableau — toutes les OPs" color="#2970c4" />
+      <Tag x={420} y={180} text="progression en temps réel" color="#e8a020" />
+    </Sketch>
+  );
+};
+
+/* ─── OPTION D: Flux Process Visuel ─── */
+const OptionD = () => {
+  const steps = [
+    { op: 'OP 80', s: 'ok', x: 30, y: 80 },
+    { op: 'OP 110', s: 'ok', x: 170, y: 80 },
+    { op: 'OP 140', s: 'retouche', x: 310, y: 80 },
+    { op: 'OP 150', s: 'ok', x: 450, y: 80 },
+    { op: 'OP 210_1', s: 'encours', x: 310, y: 210 },
+    { op: 'OP 210_2', s: 'todo', x: 450, y: 210 },
+    { op: 'OP 250_1', s: 'todo', x: 170, y: 340 },
+    { op: 'OP 250_2', s: 'todo', x: 310, y: 340 },
+    { op: 'OP 260_1', s: 'todo', x: 110, y: 460 },
+    { op: 'OP 260_2', s: 'todo', x: 240, y: 460 },
+    { op: 'OP 260_3', s: 'todo', x: 370, y: 460 },
+    { op: 'OP 260_4', s: 'todo', x: 500, y: 460 },
+  ];
+  const statusColor = { ok:'#2a9d6e', retouche:'#e8a020', encours:'#2970c4', todo:'#ccc' };
+  const statusLabel = { ok:'✓', retouche:'↩', encours:'…', todo:'○' };
+  const NODE_W = 110, NODE_H = 54;
+
+  return (
+    <Sketch w={660} h={560}>
+      {/* Header */}
+      <Rect x={0} y={0} w={660} h={44} bg="#1a1a2e" border="#1a1a2e" style={{ flexDirection: 'row', justifyContent: 'space-between', padding: '0 16px', borderRadius: '4px 4px 0 0' }}>
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>CQS — Flux Production CEV BAR</span>
+        <span style={{ color: '#aaa', fontSize: 13 }}>OF: 2024-087</span>
+      </Rect>
+
+      {/* Flow canvas */}
+      <div style={{ position: 'absolute', top: 44, left: 0, right: 0, bottom: 0, background: '#f9f7f4', overflow: 'hidden' }}>
+        {/* Phase labels */}
+        {[['Pré-assemblage',10,70,'#888'],['Assemblage principal',10,200,'#888'],['Finition',10,330,'#888'],['Contrôle final',10,450,'#888']].map(([l,x,y,c])=>(
+          <span key={l} style={{ position:'absolute', left:x, top:y, fontFamily:'Caveat', fontSize:11, color:c, fontWeight:700, letterSpacing:0.5, writingMode: 'horizontal-tb', transform: 'rotate(-90deg) translateX(-50%)', transformOrigin: 'left center', whiteSpace:'nowrap' }}>{l}</span>
+        ))}
+
+        {/* Phase dividers */}
+        {[160,290,420].map(y => (
+          <div key={y} style={{ position:'absolute', left:40, right:10, top:y, height:1, background:'#ddd', borderTop:'1px dashed #ccc' }} />
+        ))}
+
+        {/* Connections */}
+        <svg style={{ position:'absolute', left:0, top:0, width:'100%', height:'100%', pointerEvents:'none' }}>
+          {/* OP80→110, 110→140, 140→150 */}
+          <line x1={30+NODE_W} y1={80+NODE_H/2} x2={170} y2={80+NODE_H/2} stroke="#2a9d6e" strokeWidth={2} />
+          <line x1={170+NODE_W} y1={80+NODE_H/2} x2={310} y2={80+NODE_H/2} stroke="#e8a020" strokeWidth={2} strokeDasharray="4,3" />
+          <line x1={310+NODE_W} y1={80+NODE_H/2} x2={450} y2={80+NODE_H/2} stroke="#2a9d6e" strokeWidth={2} />
+          {/* down to 210 */}
+          <line x1={310+NODE_W/2} y1={80+NODE_H} x2={310+NODE_W/2} y2={210} stroke="#2970c4" strokeWidth={2} strokeDasharray="4,3" />
+          <line x1={450+NODE_W/2} y1={80+NODE_H} x2={450+NODE_W/2} y2={210} stroke="#ccc" strokeWidth={1.5} strokeDasharray="4,3" />
+          {/* 210→250 */}
+          <line x1={310+NODE_W/2} y1={210+NODE_H} x2={310+NODE_W/2} y2={280} stroke="#ccc" strokeWidth={1.5} strokeDasharray="4,3" />
+          <line x1={310+NODE_W/2} y1={280} x2={170+NODE_W/2} y2={280} stroke="#ccc" strokeWidth={1.5} strokeDasharray="4,3" />
+          <line x1={170+NODE_W/2} y1={280} x2={170+NODE_W/2} y2={340} stroke="#ccc" strokeWidth={1.5} strokeDasharray="4,3" />
+          {/* 250→260 */}
+          <line x1={170+NODE_W/2} y1={340+NODE_H} x2={170+NODE_W/2} y2={405} stroke="#ccc" strokeWidth={1.5} strokeDasharray="4,3" />
+          <line x1={170+NODE_W/2} y1={405} x2={500+NODE_W/2} y2={405} stroke="#ccc" strokeWidth={1.5} strokeDasharray="4,3" />
+          {[110,240,370,500].map(x=>(
+            <line key={x} x1={x+NODE_W/2} y1={405} x2={x+NODE_W/2} y2={460} stroke="#ccc" strokeWidth={1.5} strokeDasharray="4,3" />
+          ))}
+        </svg>
+
+        {/* Nodes */}
+        {steps.map(({ op, s, x, y }) => (
+          <div key={op} style={{
+            position:'absolute', left:x, top:y, width:NODE_W, height:NODE_H,
+            border: `2.5px solid ${statusColor[s]}`,
+            borderRadius: 8,
+            background: s === 'todo' ? '#f5f5f2' : statusColor[s] + '18',
+            display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2,
+            cursor: 'pointer',
+            boxShadow: s === 'encours' ? `0 0 0 3px ${statusColor[s]}44` : 'none',
+          }}>
+            <span style={{ fontFamily:'Caveat', fontWeight:700, fontSize:14, color: s==='todo'?'#aaa': statusColor[s] }}>{op}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+              <span style={{ fontSize:16, color: statusColor[s] }}>{statusLabel[s]}</span>
+              {s !== 'todo' && <span style={{ fontSize:11, fontFamily:'Caveat', color:'#666' }}>
+                {s==='ok'?'10/10':s==='retouche'?'↩ 2 cordons':s==='encours'?'6/12…':''}
+              </span>}
+            </div>
+          </div>
+        ))}
+
+        {/* Legend */}
+        <div style={{ position:'absolute', bottom:8, right:10, display:'flex', gap:12, alignItems:'center', background:'#fff', border:'1px solid #eee', borderRadius:4, padding:'4px 10px' }}>
+          {[['#2a9d6e','OK'],['#e8a020','Retouché'],['#2970c4','En cours'],['#ccc','À faire']].map(([c,l])=>(
+            <div key={l} style={{ display:'flex', alignItems:'center', gap:4 }}>
+              <div style={{ width:10, height:10, borderRadius:3, background:c }} />
+              <span style={{ fontFamily:'Caveat', fontSize:11, color:'#666' }}>{l}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Tag x={160} y={140} text="cliquer un nœud = ouvrir la checklist" color="#2970c4" />
+      <Tag x={330} y={230} text="en cours — pulse" color="#2970c4" />
+    </Sketch>
+  );
+};
+
+/* ─── MAIN APP ─── */
+function App() {
+  return (
+    <DesignCanvas title="CQS — Wireframes Interface">
+      <DCSection id="s1" title="Concepts d'interface">
+        <DCArtboard id="a" label="A — Dashboard Split (desktop)" width={870} height={580}>
+          <div style={{ width: 870, height: 580, background: '#f0ede8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div>
+              <div style={{ fontFamily:'Caveat', fontSize:11, color:'#aaa', textAlign:'center', marginBottom:8 }}>
+                Barre latérale OPs + panneau checklist — idéal bureau / grand écran
+              </div>
+              <OptionA />
+            </div>
+          </div>
+        </DCArtboard>
+
+        <DCArtboard id="b" label="B — Wizard pas-à-pas (mobile/tablette)" width={530} height={640}>
+          <div style={{ width: 530, height: 640, background: '#f0ede8', display: 'flex', flexDirection:'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <div style={{ fontFamily:'Caveat', fontSize:11, color:'#aaa', textAlign:'center' }}>
+              Guidage étape par étape — adapté aux tablettes en atelier
+            </div>
+            <OptionB />
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="s2" title="">
+        <DCArtboard id="c" label="C — Vue tableau compacte (multi-OF)" width={800} height={580}>
+          <div style={{ width: 800, height: 580, background: '#f0ede8', display: 'flex', flexDirection:'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <div style={{ fontFamily:'Caveat', fontSize:11, color:'#aaa', textAlign:'center' }}>
+              Tableau de bord + liste — vue chef qualité, multi-pièces en parallèle
+            </div>
+            <OptionC />
+          </div>
+        </DCArtboard>
+
+        <DCArtboard id="d" label="D — Flux process visuel" width={740} height={620}>
+          <div style={{ width: 740, height: 620, background: '#f0ede8', display: 'flex', flexDirection:'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <div style={{ fontFamily:'Caveat', fontSize:11, color:'#aaa', textAlign:'center' }}>
+              Diagramme flux production — voir où on en est dans le process
+            </div>
+            <OptionD />
+          </div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
