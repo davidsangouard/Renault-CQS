@@ -5,13 +5,15 @@ setCorsHeaders();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+// ── GET : état de la session ────────────────────────────────────────────────
 if ($method === 'GET') {
     jsonOk([
         'ipn'    => $_SESSION['ipn']    ?? null,
-        'filter' => isset($_SESSION['filter']) ? $_SESSION['filter'] : null,
+        'filter' => $_SESSION['filter'] ?? null,
     ]);
 }
 
+// ── POST ────────────────────────────────────────────────────────────────────
 if ($method === 'POST') {
     $body   = getBody();
     $action = $body['action'] ?? 'login';
@@ -21,6 +23,7 @@ if ($method === 'POST') {
         jsonOk(['ok' => true]);
     }
 
+    // Login opérateur — tout IPN est accepté
     if ($action === 'login') {
         $ipn = strtoupper(trim($body['ipn'] ?? ''));
         if ($ipn === '') jsonErr('IPN requis');
@@ -28,17 +31,21 @@ if ($method === 'POST') {
         jsonOk(['ok' => true, 'ipn' => $ipn]);
     }
 
+    // Vérification IPN manager — contrôle dans la table ipns
     if ($action === 'manager_check') {
         $ipn = strtoupper(trim($body['ipn'] ?? ''));
         if ($ipn === '') jsonErr('IPN requis');
+
         $db  = getDB();
-        $row = $db->query("SELECT cfg_value FROM app_config WHERE cfg_key = 'manager_ipns'")->fetch();
-        $list = $row ? array_map('strtoupper', json_decode($row['cfg_value'], true) ?: []) : ['ADMIN','CHEF01','QUAL01'];
-        if (in_array($ipn, $list)) jsonOk(['ok' => true, 'ipn' => $ipn]);
-        else jsonErr('IPN non autorisé', 403);
+        $row = $db->prepare("SELECT id FROM ipns WHERE ipn = ? AND is_manager = 1");
+        $row->execute([$ipn]);
+
+        if ($row->fetch()) jsonOk(['ok' => true, 'ipn' => $ipn]);
+        else               jsonErr('IPN non autorisé', 403);
     }
 }
 
+// ── DELETE : déconnexion ────────────────────────────────────────────────────
 if ($method === 'DELETE') {
     $_SESSION = [];
     session_destroy();
