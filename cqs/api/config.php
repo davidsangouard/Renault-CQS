@@ -4,54 +4,6 @@ session_start();
 require_once __DIR__ . '/db.php';
 setCorsHeaders();
 
-// ─── Données par défaut des opérations ───────────────────────────────────────
-function defaultOps(): array {
-    return [
-        ['key'=>'OP 80',      'cordons'=>[260,261,262,263],                                                                     'sousEns'=>[],                                                              'pieces'=>['Tôle latérale D','Tôle latérale G']],
-        ['key'=>'OP 110',     'cordons'=>[100,101,102,103,164,165,166,167,168,169,22,23],                                       'sousEns'=>[['label'=>'OP 80']],                                            'pieces'=>['Longeron','Renfort avant']],
-        ['key'=>'OP 140',     'cordons'=>[308,309,304,305,334,335,312,313,270,271],                                             'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 150',     'cordons'=>[30,31,32,33,350,351,36,37,38,39,365,352,353,10,11,14,15],                             'sousEns'=>[],                                                              'pieces'=>['Traverse centrale']],
-        ['key'=>'OP 210_1',   'cordons'=>[180,181,52,53,132,133,140,141,64,65,142,143,68,69,182,183,200,201,208,209,206,207],   'sousEns'=>[['label'=>'OP 110'],['label'=>'OP 140'],['label'=>'OP 150']],   'pieces'=>[]],
-        ['key'=>'OP 210_2',   'cordons'=>[336,337,190,191,66,67,54,55,56,57,202,203],                                           'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 250_1',   'cordons'=>[74,75,72,73,76,77,78,79,80,81,90,91,92,93,42,43],                                    'sousEns'=>[['label'=>'OP 210']],                                           'pieces'=>['Platine','Gousset D','Gousset G']],
-        ['key'=>'OP 250_2WS', 'cordons'=>[284,285,282,283,288,289,290,291,294,295],                                             'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 250_3',   'cordons'=>[],                                                                                    'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 260_1',   'cordons'=>[58,59,50,51,16,17,12,13,34,35,238,239],                                               'sousEns'=>[['label'=>'OP 250']],                                           'pieces'=>[]],
-        ['key'=>'OP 260_2',   'cordons'=>[20,21,82,83,314,315,70,71,292,293,122,123,126,127,120,121,124,125],                   'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 260_3',   'cordons'=>[280,281,176,173,174,40,41],                                                           'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 260_4',   'cordons'=>[302,303,306,307,300,301,162,163,310,311],                                             'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 260_5',   'cordons'=>[84,85,86,87,354,355,286,287,204,205],                                                 'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 260_6',   'cordons'=>[338,339],                                                                             'sousEns'=>[],                                                              'pieces'=>[]],
-        ['key'=>'OP 260_7',   'cordons'=>[],                                                                                    'sousEns'=>[],                                                              'pieces'=>[]],
-    ];
-}
-
-// Insère les opérations par défaut pour tous les organes si la table est vide
-function seedOpsIfEmpty(PDO $db): void {
-    if ((int)$db->query("SELECT COUNT(*) FROM operations")->fetchColumn() > 0) return;
-
-    $organes = $db->query("SELECT id FROM organes")->fetchAll(PDO::FETCH_COLUMN);
-    $ops     = defaultOps();
-
-    $insOp = $db->prepare("INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (?,?,?)");
-    $insCo = $db->prepare("INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES (?,?,?)");
-    $insPi = $db->prepare("INSERT IGNORE INTO pieces (operation_id, label, sort_order) VALUES (?,?,?)");
-    $insSe = $db->prepare("INSERT IGNORE INTO op_sous_ensembles (operation_id, ref_label, sort_order) VALUES (?,?,?)");
-    $getOp = $db->prepare("SELECT id FROM operations WHERE organe_id=? AND op_key=?");
-
-    foreach ($organes as $orgId) {
-        foreach ($ops as $i => $def) {
-            $insOp->execute([$orgId, $def['key'], $i]);
-            $getOp->execute([$orgId, $def['key']]);
-            $opId = $getOp->fetchColumn();
-            if (!$opId) continue;
-            foreach ($def['cordons'] as $j => $num) $insCo->execute([$opId, $num, $j]);
-            foreach ($def['pieces']  as $j => $lbl) $insPi->execute([$opId, $lbl, $j]);
-            foreach ($def['sousEns'] as $j => $se)  $insSe->execute([$opId, $se['label'], $j]);
-        }
-    }
-}
-
 // ─── Construit la structure config attendue par le frontend ──────────────────
 function buildConfig(PDO $db): array {
     $projets = $db->query("SELECT id, code, label FROM projets ORDER BY sort_order, id")->fetchAll();
@@ -305,9 +257,7 @@ function syncManagerIpns(PDO $db, array $ipns): void {
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $db = getDB();
-    seedOpsIfEmpty($db);
-    jsonOk(buildConfig($db));
+    jsonOk(buildConfig(getDB()));
 }
 
 if ($method === 'POST') {
