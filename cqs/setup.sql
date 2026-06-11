@@ -1,6 +1,6 @@
 -- CQS — Checklist Qualité Soudure
 -- Schéma normalisé + données initiales complètes
--- Import phpMyAdmin : File → Import → ce fichier
+-- Import phpMyAdmin : File → Import → ce fichier (aucune procédure stockée)
 
 CREATE DATABASE IF NOT EXISTS `cqs_db`
   DEFAULT CHARACTER SET utf8mb4
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS `sous_ensemble_verifications` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Données de référence : IPNs, projets, organes
+-- IPNs, projets, organes
 -- ─────────────────────────────────────────────────────────────────────────────
 
 INSERT IGNORE INTO `ipns` (`ipn`, `is_manager`) VALUES
@@ -162,166 +162,247 @@ INSERT IGNORE INTO `organes` (`projet_id`, `code`, `label`, `sort_order`) VALUES
   ((SELECT id FROM projets WHERE code='x82'), 'x82-bav', 'BAV', 2);
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Procédure : hydrate opérations, cordons, pièces et sous-ensembles
--- Les 16 OPs sont identiques pour tous les organes.
+-- Opérations — CROSS JOIN : insère les 16 OPs pour chacun des 4 organes
 -- ─────────────────────────────────────────────────────────────────────────────
 
-DROP PROCEDURE IF EXISTS `cqs_seed_ops`;
+INSERT IGNORE INTO `operations` (`organe_id`, `op_key`, `sort_order`)
+SELECT o.id, t.op_key, t.sort_order
+FROM `organes` o
+CROSS JOIN (
+  SELECT 'OP 80'      AS op_key,  0 AS sort_order UNION ALL
+  SELECT 'OP 110',                1 UNION ALL
+  SELECT 'OP 140',                2 UNION ALL
+  SELECT 'OP 150',                3 UNION ALL
+  SELECT 'OP 210_1',              4 UNION ALL
+  SELECT 'OP 210_2',              5 UNION ALL
+  SELECT 'OP 250_1',              6 UNION ALL
+  SELECT 'OP 250_2WS',            7 UNION ALL
+  SELECT 'OP 250_3',              8 UNION ALL
+  SELECT 'OP 260_1',              9 UNION ALL
+  SELECT 'OP 260_2',             10 UNION ALL
+  SELECT 'OP 260_3',             11 UNION ALL
+  SELECT 'OP 260_4',             12 UNION ALL
+  SELECT 'OP 260_5',             13 UNION ALL
+  SELECT 'OP 260_6',             14 UNION ALL
+  SELECT 'OP 260_7',             15
+) t;
 
-DELIMITER //
-CREATE PROCEDURE `cqs_seed_ops`()
-BEGIN
-  DECLARE done  INT DEFAULT 0;
-  DECLARE v_org INT;
-  DECLARE v_op  INT;
-  DECLARE cur   CURSOR FOR SELECT id FROM organes ORDER BY id;
-  DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Cordons — INNER JOIN sur op_key : insère pour tous les organes d'un coup
+-- ─────────────────────────────────────────────────────────────────────────────
 
-  OPEN cur;
-  op_loop: LOOP
-    FETCH cur INTO v_org;
-    IF done THEN LEAVE op_loop; END IF;
+INSERT IGNORE INTO `cordons` (`operation_id`, `numero`, `sort_order`)
+SELECT op.id, c.numero, c.sort_order
+FROM `operations` op
+INNER JOIN (
+  -- OP 80
+  SELECT 'OP 80' AS op_key, 260 AS numero,  0 AS sort_order UNION ALL
+  SELECT 'OP 80', 261,  1 UNION ALL
+  SELECT 'OP 80', 262,  2 UNION ALL
+  SELECT 'OP 80', 263,  3 UNION ALL
+  -- OP 110
+  SELECT 'OP 110', 100,  0 UNION ALL
+  SELECT 'OP 110', 101,  1 UNION ALL
+  SELECT 'OP 110', 102,  2 UNION ALL
+  SELECT 'OP 110', 103,  3 UNION ALL
+  SELECT 'OP 110', 164,  4 UNION ALL
+  SELECT 'OP 110', 165,  5 UNION ALL
+  SELECT 'OP 110', 166,  6 UNION ALL
+  SELECT 'OP 110', 167,  7 UNION ALL
+  SELECT 'OP 110', 168,  8 UNION ALL
+  SELECT 'OP 110', 169,  9 UNION ALL
+  SELECT 'OP 110',  22, 10 UNION ALL
+  SELECT 'OP 110',  23, 11 UNION ALL
+  -- OP 140
+  SELECT 'OP 140', 308,  0 UNION ALL
+  SELECT 'OP 140', 309,  1 UNION ALL
+  SELECT 'OP 140', 304,  2 UNION ALL
+  SELECT 'OP 140', 305,  3 UNION ALL
+  SELECT 'OP 140', 334,  4 UNION ALL
+  SELECT 'OP 140', 335,  5 UNION ALL
+  SELECT 'OP 140', 312,  6 UNION ALL
+  SELECT 'OP 140', 313,  7 UNION ALL
+  SELECT 'OP 140', 270,  8 UNION ALL
+  SELECT 'OP 140', 271,  9 UNION ALL
+  -- OP 150
+  SELECT 'OP 150',  30,  0 UNION ALL
+  SELECT 'OP 150',  31,  1 UNION ALL
+  SELECT 'OP 150',  32,  2 UNION ALL
+  SELECT 'OP 150',  33,  3 UNION ALL
+  SELECT 'OP 150', 350,  4 UNION ALL
+  SELECT 'OP 150', 351,  5 UNION ALL
+  SELECT 'OP 150',  36,  6 UNION ALL
+  SELECT 'OP 150',  37,  7 UNION ALL
+  SELECT 'OP 150',  38,  8 UNION ALL
+  SELECT 'OP 150',  39,  9 UNION ALL
+  SELECT 'OP 150', 365, 10 UNION ALL
+  SELECT 'OP 150', 352, 11 UNION ALL
+  SELECT 'OP 150', 353, 12 UNION ALL
+  SELECT 'OP 150',  10, 13 UNION ALL
+  SELECT 'OP 150',  11, 14 UNION ALL
+  SELECT 'OP 150',  14, 15 UNION ALL
+  SELECT 'OP 150',  15, 16 UNION ALL
+  -- OP 210_1
+  SELECT 'OP 210_1', 180,  0 UNION ALL
+  SELECT 'OP 210_1', 181,  1 UNION ALL
+  SELECT 'OP 210_1',  52,  2 UNION ALL
+  SELECT 'OP 210_1',  53,  3 UNION ALL
+  SELECT 'OP 210_1', 132,  4 UNION ALL
+  SELECT 'OP 210_1', 133,  5 UNION ALL
+  SELECT 'OP 210_1', 140,  6 UNION ALL
+  SELECT 'OP 210_1', 141,  7 UNION ALL
+  SELECT 'OP 210_1',  64,  8 UNION ALL
+  SELECT 'OP 210_1',  65,  9 UNION ALL
+  SELECT 'OP 210_1', 142, 10 UNION ALL
+  SELECT 'OP 210_1', 143, 11 UNION ALL
+  SELECT 'OP 210_1',  68, 12 UNION ALL
+  SELECT 'OP 210_1',  69, 13 UNION ALL
+  SELECT 'OP 210_1', 182, 14 UNION ALL
+  SELECT 'OP 210_1', 183, 15 UNION ALL
+  SELECT 'OP 210_1', 200, 16 UNION ALL
+  SELECT 'OP 210_1', 201, 17 UNION ALL
+  SELECT 'OP 210_1', 208, 18 UNION ALL
+  SELECT 'OP 210_1', 209, 19 UNION ALL
+  SELECT 'OP 210_1', 206, 20 UNION ALL
+  SELECT 'OP 210_1', 207, 21 UNION ALL
+  -- OP 210_2
+  SELECT 'OP 210_2', 336,  0 UNION ALL
+  SELECT 'OP 210_2', 337,  1 UNION ALL
+  SELECT 'OP 210_2', 190,  2 UNION ALL
+  SELECT 'OP 210_2', 191,  3 UNION ALL
+  SELECT 'OP 210_2',  66,  4 UNION ALL
+  SELECT 'OP 210_2',  67,  5 UNION ALL
+  SELECT 'OP 210_2',  54,  6 UNION ALL
+  SELECT 'OP 210_2',  55,  7 UNION ALL
+  SELECT 'OP 210_2',  56,  8 UNION ALL
+  SELECT 'OP 210_2',  57,  9 UNION ALL
+  SELECT 'OP 210_2', 202, 10 UNION ALL
+  SELECT 'OP 210_2', 203, 11 UNION ALL
+  -- OP 250_1
+  SELECT 'OP 250_1',  74,  0 UNION ALL
+  SELECT 'OP 250_1',  75,  1 UNION ALL
+  SELECT 'OP 250_1',  72,  2 UNION ALL
+  SELECT 'OP 250_1',  73,  3 UNION ALL
+  SELECT 'OP 250_1',  76,  4 UNION ALL
+  SELECT 'OP 250_1',  77,  5 UNION ALL
+  SELECT 'OP 250_1',  78,  6 UNION ALL
+  SELECT 'OP 250_1',  79,  7 UNION ALL
+  SELECT 'OP 250_1',  80,  8 UNION ALL
+  SELECT 'OP 250_1',  81,  9 UNION ALL
+  SELECT 'OP 250_1',  90, 10 UNION ALL
+  SELECT 'OP 250_1',  91, 11 UNION ALL
+  SELECT 'OP 250_1',  92, 12 UNION ALL
+  SELECT 'OP 250_1',  93, 13 UNION ALL
+  SELECT 'OP 250_1',  42, 14 UNION ALL
+  SELECT 'OP 250_1',  43, 15 UNION ALL
+  -- OP 250_2WS
+  SELECT 'OP 250_2WS', 284,  0 UNION ALL
+  SELECT 'OP 250_2WS', 285,  1 UNION ALL
+  SELECT 'OP 250_2WS', 282,  2 UNION ALL
+  SELECT 'OP 250_2WS', 283,  3 UNION ALL
+  SELECT 'OP 250_2WS', 288,  4 UNION ALL
+  SELECT 'OP 250_2WS', 289,  5 UNION ALL
+  SELECT 'OP 250_2WS', 290,  6 UNION ALL
+  SELECT 'OP 250_2WS', 291,  7 UNION ALL
+  SELECT 'OP 250_2WS', 294,  8 UNION ALL
+  SELECT 'OP 250_2WS', 295,  9 UNION ALL
+  -- OP 260_1
+  SELECT 'OP 260_1',  58,  0 UNION ALL
+  SELECT 'OP 260_1',  59,  1 UNION ALL
+  SELECT 'OP 260_1',  50,  2 UNION ALL
+  SELECT 'OP 260_1',  51,  3 UNION ALL
+  SELECT 'OP 260_1',  16,  4 UNION ALL
+  SELECT 'OP 260_1',  17,  5 UNION ALL
+  SELECT 'OP 260_1',  12,  6 UNION ALL
+  SELECT 'OP 260_1',  13,  7 UNION ALL
+  SELECT 'OP 260_1',  34,  8 UNION ALL
+  SELECT 'OP 260_1',  35,  9 UNION ALL
+  SELECT 'OP 260_1', 238, 10 UNION ALL
+  SELECT 'OP 260_1', 239, 11 UNION ALL
+  -- OP 260_2
+  SELECT 'OP 260_2',  20,  0 UNION ALL
+  SELECT 'OP 260_2',  21,  1 UNION ALL
+  SELECT 'OP 260_2',  82,  2 UNION ALL
+  SELECT 'OP 260_2',  83,  3 UNION ALL
+  SELECT 'OP 260_2', 314,  4 UNION ALL
+  SELECT 'OP 260_2', 315,  5 UNION ALL
+  SELECT 'OP 260_2',  70,  6 UNION ALL
+  SELECT 'OP 260_2',  71,  7 UNION ALL
+  SELECT 'OP 260_2', 292,  8 UNION ALL
+  SELECT 'OP 260_2', 293,  9 UNION ALL
+  SELECT 'OP 260_2', 122, 10 UNION ALL
+  SELECT 'OP 260_2', 123, 11 UNION ALL
+  SELECT 'OP 260_2', 126, 12 UNION ALL
+  SELECT 'OP 260_2', 127, 13 UNION ALL
+  SELECT 'OP 260_2', 120, 14 UNION ALL
+  SELECT 'OP 260_2', 121, 15 UNION ALL
+  SELECT 'OP 260_2', 124, 16 UNION ALL
+  SELECT 'OP 260_2', 125, 17 UNION ALL
+  -- OP 260_3
+  SELECT 'OP 260_3', 280,  0 UNION ALL
+  SELECT 'OP 260_3', 281,  1 UNION ALL
+  SELECT 'OP 260_3', 176,  2 UNION ALL
+  SELECT 'OP 260_3', 173,  3 UNION ALL
+  SELECT 'OP 260_3', 174,  4 UNION ALL
+  SELECT 'OP 260_3',  40,  5 UNION ALL
+  SELECT 'OP 260_3',  41,  6 UNION ALL
+  -- OP 260_4
+  SELECT 'OP 260_4', 302,  0 UNION ALL
+  SELECT 'OP 260_4', 303,  1 UNION ALL
+  SELECT 'OP 260_4', 306,  2 UNION ALL
+  SELECT 'OP 260_4', 307,  3 UNION ALL
+  SELECT 'OP 260_4', 300,  4 UNION ALL
+  SELECT 'OP 260_4', 301,  5 UNION ALL
+  SELECT 'OP 260_4', 162,  6 UNION ALL
+  SELECT 'OP 260_4', 163,  7 UNION ALL
+  SELECT 'OP 260_4', 310,  8 UNION ALL
+  SELECT 'OP 260_4', 311,  9 UNION ALL
+  -- OP 260_5
+  SELECT 'OP 260_5',  84,  0 UNION ALL
+  SELECT 'OP 260_5',  85,  1 UNION ALL
+  SELECT 'OP 260_5',  86,  2 UNION ALL
+  SELECT 'OP 260_5',  87,  3 UNION ALL
+  SELECT 'OP 260_5', 354,  4 UNION ALL
+  SELECT 'OP 260_5', 355,  5 UNION ALL
+  SELECT 'OP 260_5', 286,  6 UNION ALL
+  SELECT 'OP 260_5', 287,  7 UNION ALL
+  SELECT 'OP 260_5', 204,  8 UNION ALL
+  SELECT 'OP 260_5', 205,  9 UNION ALL
+  -- OP 260_6
+  SELECT 'OP 260_6', 338,  0 UNION ALL
+  SELECT 'OP 260_6', 339,  1
+) c ON c.op_key = op.op_key;
 
-    -- ── OP 80 ────────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 80', 0);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 80');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,260,0),(v_op,261,1),(v_op,262,2),(v_op,263,3);
-    INSERT IGNORE INTO pieces (operation_id, label, sort_order) VALUES
-      (v_op,'Tôle latérale D',0),(v_op,'Tôle latérale G',1);
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Pièces
+-- ─────────────────────────────────────────────────────────────────────────────
 
-    -- ── OP 110 ───────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 110', 1);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 110');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,100,0),(v_op,101,1),(v_op,102,2),(v_op,103,3),
-      (v_op,164,4),(v_op,165,5),(v_op,166,6),(v_op,167,7),
-      (v_op,168,8),(v_op,169,9),(v_op,22,10),(v_op,23,11);
-    INSERT IGNORE INTO pieces (operation_id, label, sort_order) VALUES
-      (v_op,'Longeron',0),(v_op,'Renfort avant',1);
-    INSERT IGNORE INTO op_sous_ensembles (operation_id, ref_label, sort_order) VALUES
-      (v_op,'OP 80',0);
+INSERT IGNORE INTO `pieces` (`operation_id`, `label`, `sort_order`)
+SELECT op.id, p.label, p.sort_order
+FROM `operations` op
+INNER JOIN (
+  SELECT 'OP 80'    AS op_key, 'Tôle latérale D'  AS label, 0 AS sort_order UNION ALL
+  SELECT 'OP 80',              'Tôle latérale G',           1 UNION ALL
+  SELECT 'OP 110',             'Longeron',                  0 UNION ALL
+  SELECT 'OP 110',             'Renfort avant',             1 UNION ALL
+  SELECT 'OP 150',             'Traverse centrale',         0 UNION ALL
+  SELECT 'OP 250_1',           'Platine',                   0 UNION ALL
+  SELECT 'OP 250_1',           'Gousset D',                 1 UNION ALL
+  SELECT 'OP 250_1',           'Gousset G',                 2
+) p ON p.op_key = op.op_key;
 
-    -- ── OP 140 ───────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 140', 2);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 140');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,308,0),(v_op,309,1),(v_op,304,2),(v_op,305,3),
-      (v_op,334,4),(v_op,335,5),(v_op,312,6),(v_op,313,7),
-      (v_op,270,8),(v_op,271,9);
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Sous-ensembles requis
+-- ─────────────────────────────────────────────────────────────────────────────
 
-    -- ── OP 150 ───────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 150', 3);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 150');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,30,0),(v_op,31,1),(v_op,32,2),(v_op,33,3),
-      (v_op,350,4),(v_op,351,5),(v_op,36,6),(v_op,37,7),
-      (v_op,38,8),(v_op,39,9),(v_op,365,10),(v_op,352,11),
-      (v_op,353,12),(v_op,10,13),(v_op,11,14),(v_op,14,15),(v_op,15,16);
-    INSERT IGNORE INTO pieces (operation_id, label, sort_order) VALUES
-      (v_op,'Traverse centrale',0);
-
-    -- ── OP 210_1 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 210_1', 4);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 210_1');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,180,0),(v_op,181,1),(v_op,52,2),(v_op,53,3),
-      (v_op,132,4),(v_op,133,5),(v_op,140,6),(v_op,141,7),
-      (v_op,64,8),(v_op,65,9),(v_op,142,10),(v_op,143,11),
-      (v_op,68,12),(v_op,69,13),(v_op,182,14),(v_op,183,15),
-      (v_op,200,16),(v_op,201,17),(v_op,208,18),(v_op,209,19),
-      (v_op,206,20),(v_op,207,21);
-    INSERT IGNORE INTO op_sous_ensembles (operation_id, ref_label, sort_order) VALUES
-      (v_op,'OP 110',0),(v_op,'OP 140',1),(v_op,'OP 150',2);
-
-    -- ── OP 210_2 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 210_2', 5);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 210_2');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,336,0),(v_op,337,1),(v_op,190,2),(v_op,191,3),
-      (v_op,66,4),(v_op,67,5),(v_op,54,6),(v_op,55,7),
-      (v_op,56,8),(v_op,57,9),(v_op,202,10),(v_op,203,11);
-
-    -- ── OP 250_1 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 250_1', 6);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 250_1');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,74,0),(v_op,75,1),(v_op,72,2),(v_op,73,3),
-      (v_op,76,4),(v_op,77,5),(v_op,78,6),(v_op,79,7),
-      (v_op,80,8),(v_op,81,9),(v_op,90,10),(v_op,91,11),
-      (v_op,92,12),(v_op,93,13),(v_op,42,14),(v_op,43,15);
-    INSERT IGNORE INTO pieces (operation_id, label, sort_order) VALUES
-      (v_op,'Platine',0),(v_op,'Gousset D',1),(v_op,'Gousset G',2);
-    INSERT IGNORE INTO op_sous_ensembles (operation_id, ref_label, sort_order) VALUES
-      (v_op,'OP 210',0);
-
-    -- ── OP 250_2WS ───────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 250_2WS', 7);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 250_2WS');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,284,0),(v_op,285,1),(v_op,282,2),(v_op,283,3),
-      (v_op,288,4),(v_op,289,5),(v_op,290,6),(v_op,291,7),
-      (v_op,294,8),(v_op,295,9);
-
-    -- ── OP 250_3 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 250_3', 8);
-
-    -- ── OP 260_1 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 260_1', 9);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 260_1');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,58,0),(v_op,59,1),(v_op,50,2),(v_op,51,3),
-      (v_op,16,4),(v_op,17,5),(v_op,12,6),(v_op,13,7),
-      (v_op,34,8),(v_op,35,9),(v_op,238,10),(v_op,239,11);
-    INSERT IGNORE INTO op_sous_ensembles (operation_id, ref_label, sort_order) VALUES
-      (v_op,'OP 250',0);
-
-    -- ── OP 260_2 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 260_2', 10);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 260_2');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,20,0),(v_op,21,1),(v_op,82,2),(v_op,83,3),
-      (v_op,314,4),(v_op,315,5),(v_op,70,6),(v_op,71,7),
-      (v_op,292,8),(v_op,293,9),(v_op,122,10),(v_op,123,11),
-      (v_op,126,12),(v_op,127,13),(v_op,120,14),(v_op,121,15),
-      (v_op,124,16),(v_op,125,17);
-
-    -- ── OP 260_3 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 260_3', 11);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 260_3');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,280,0),(v_op,281,1),(v_op,176,2),(v_op,173,3),
-      (v_op,174,4),(v_op,40,5),(v_op,41,6);
-
-    -- ── OP 260_4 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 260_4', 12);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 260_4');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,302,0),(v_op,303,1),(v_op,306,2),(v_op,307,3),
-      (v_op,300,4),(v_op,301,5),(v_op,162,6),(v_op,163,7),
-      (v_op,310,8),(v_op,311,9);
-
-    -- ── OP 260_5 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 260_5', 13);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 260_5');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,84,0),(v_op,85,1),(v_op,86,2),(v_op,87,3),
-      (v_op,354,4),(v_op,355,5),(v_op,286,6),(v_op,287,7),
-      (v_op,204,8),(v_op,205,9);
-
-    -- ── OP 260_6 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 260_6', 14);
-    SET v_op = (SELECT id FROM operations WHERE organe_id=v_org AND op_key='OP 260_6');
-    INSERT IGNORE INTO cordons (operation_id, numero, sort_order) VALUES
-      (v_op,338,0),(v_op,339,1);
-
-    -- ── OP 260_7 ─────────────────────────────────────────────────────────────
-    INSERT IGNORE INTO operations (organe_id, op_key, sort_order) VALUES (v_org, 'OP 260_7', 15);
-
-  END LOOP;
-  CLOSE cur;
-END //
-DELIMITER ;
-
-CALL cqs_seed_ops();
-DROP PROCEDURE IF EXISTS `cqs_seed_ops`;
+INSERT IGNORE INTO `op_sous_ensembles` (`operation_id`, `ref_label`, `sort_order`)
+SELECT op.id, se.ref_label, se.sort_order
+FROM `operations` op
+INNER JOIN (
+  SELECT 'OP 110'   AS op_key, 'OP 80'  AS ref_label, 0 AS sort_order UNION ALL
+  SELECT 'OP 210_1',           'OP 110',              0 UNION ALL
+  SELECT 'OP 210_1',           'OP 140',              1 UNION ALL
+  SELECT 'OP 210_1',           'OP 150',              2 UNION ALL
+  SELECT 'OP 250_1',           'OP 210',              0 UNION ALL
+  SELECT 'OP 260_1',           'OP 250',              0
+) se ON se.op_key = op.op_key;
