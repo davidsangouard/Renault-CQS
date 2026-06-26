@@ -1,6 +1,6 @@
 # CQS - Checklist Qualité Soudure
 
-Application web locale de suivi qualité pour les postes de soudure. Développée pour les lignes de production Renault, elle permet aux opérateurs de valider leurs opérations de soudure en temps réel et aux responsables qualité de piloter la conformité et d'exporter les rapports PDF.
+Application web de suivi qualité pour les postes de soudure. Développée pour les lignes de production Renault, elle permet aux opérateurs de valider leurs opérations de soudure en temps réel et aux responsables qualité de piloter la conformité et d'exporter les rapports PDF.
 
 ---
 
